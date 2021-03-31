@@ -1,6 +1,5 @@
 /**
  * @format
- * @flow strict-local
  */
 
 import React from 'react';
@@ -15,6 +14,10 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import {
+  cartesianToPolar,
+  degreesToRadians,
+} from './../utils/MathUtils.js';
 import Slider from '@react-native-community/slider';
 
 const PADDING = 20;
@@ -105,7 +108,7 @@ export default function ColorPicker() {
   };
 
   const hslToCartesian = (h, s, l) => {
-    h *= Math.PI / 180;
+    h = degreesToRadians(h);
     s /= 100;
     l /= 100;
 
@@ -126,13 +129,6 @@ export default function ColorPicker() {
   const outOfBounds = (radius) => {
     return radius >= 1.0;
   };
-
-  const cartesianToPolar = (x, y) => {
-    const radius = Math.sqrt(x * x + y * y);
-    const theta = Math.atan2(y, x) * -180 / Math.PI;
-
-    return {radius, theta};
-  }
 
   const updateColor = (event, gestureState) => {
     const x = 2 * event.nativeEvent.locationX / dimensionsRef.current.pickerDiameter - 1;
@@ -189,7 +185,7 @@ export default function ColorPicker() {
         </Text>
         <View onLayout={onLayout} style={styles.pickerContainer}>
           <Image
-            source={require('./color_wheel.png')}
+            source={require('./../assets/color_wheel.png')}
             style={{
               width: dimensionsRef.current.pickerDiameter,
               height: dimensionsRef.current.pickerDiameter,

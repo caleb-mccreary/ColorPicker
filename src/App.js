@@ -1,7 +1,4 @@
 /**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
  * @format
  * @flow strict-local
  */
@@ -14,7 +11,7 @@ import {
   View,
 } from 'react-native';
 
-import ColorPicker from './ColorPicker.js';
+import ColorPicker from './components/ColorPicker';
 
 const App = () => {
   return (
