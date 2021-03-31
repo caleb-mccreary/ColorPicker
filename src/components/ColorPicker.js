@@ -16,26 +16,29 @@ import {
 } from 'react-native';
 import {
   cartesianToPolar,
-  degreesToRadians,
-} from './../utils/MathUtils.js';
+  hslToCartesian,
+  hslToString,
+  polarToHSL,
+} from './../utils/ColorUtils.js';
 import Slider from '@react-native-community/slider';
 
 const PADDING = 20;
 const SELECTOR_SIZE = 20;
 const DEFAULT_COLORS = [
-  {h: 0, s: 100, l: 50},
-  {h: 39, s: 100, l: 50},
-  {h: 60, s: 100, l: 50},
-  {h: 120, s: 100, l: 25},
-  {h: 240, s: 100, l: 50},
-  {h: 275, s: 100, l: 25},
-  {h: 300, s: 76, l: 72},
+  {h: 0, s: 100, l: 50},   // red
+  {h: 39, s: 100, l: 50},  // orange
+  {h: 60, s: 100, l: 50},  // blue
+  {h: 120, s: 100, l: 25}, // green
+  {h: 240, s: 100, l: 50}, // yellow
+  {h: 275, s: 100, l: 25}, // indigo
+  {h: 300, s: 76, l: 72},  // violet
 ];
 
-export default function ColorPicker() {
+export default function ColorPicker(padding, selectorSize) {
   const [dimensions, setDimensions] = useState({
     buttonDiameter: 0,
     pickerDiameter: 0,
+    pickerRadius: 0,
   });
   const dimensionsRef = useRef(null);
   dimensionsRef.current = dimensions;
@@ -47,15 +50,11 @@ export default function ColorPicker() {
   const panResponder = React.useMemo(() => PanResponder.create({
       onStartShouldSetPanResponder: (event, gestureState) => true,
       onPanResponderGrant: (event, gestureState) => {
-        const pickerRadius = dimensionsRef.current.pickerDiameter / 2;
-        pan.setOffset({
-          x: event.nativeEvent.locationX - pickerRadius,
-          y: event.nativeEvent.locationY - pickerRadius,
-        });
-        pan.setValue({
-          x: 0,
-          y: 0,
-        });
+        const pickerRadius = dimensionsRef.current.pickerRadius;
+        setPanLocation(
+         event.nativeEvent.locationX - pickerRadius,
+         event.nativeEvent.locationY - pickerRadius,
+        );
         return true;
       },
       onPanResponderMove: (event, gestureState) => {
@@ -76,61 +75,31 @@ export default function ColorPicker() {
       }
     }), []);
 
+  const setPanLocation = (x, y) => {
+    pan.setOffset({
+      x: x,
+      y: y,
+    });
+    pan.setValue({
+      x: 0,
+      y: 0,
+    });
+  };
+
   const onLayout = (event) => {
     const {width, height, x, y} = event.nativeEvent.layout;
     const buttonDiameter = (width - PADDING / 2) / DEFAULT_COLORS.length;
     const pickerDiameter = width - PADDING * 4;
-    setDimensions({buttonDiameter, pickerDiameter, width, height, x, y});
+    const pickerRadius = pickerDiameter / 2;
+    setDimensions({buttonDiameter, pickerDiameter, pickerRadius});
   };
-
-  const hslToString = (h, s, l) => {
-    return `hsl(${h}, ${s}%, ${l}%)`;
-  }
-
-  const polarToHSL = (radius, theta) => {
-    const h = theta;
-    let s = radius;
-    let v = 1;
-
-    let l = (2 - s) * (v / 2);
-    if (l === 1) {
-      s = 0;
-    } else if (l < 0.5) {
-      s = (s * v) / (l * 2);
-    } else {
-      s = s * v / (2 - l * 2);
-    }
-
-    s *= 100;
-    l *= 100;
-
-    return {h, s, l};
-  };
-
-  const hslToCartesian = (h, s, l) => {
-    h = degreesToRadians(h);
-    s /= 100;
-    l /= 100;
-
-    const v = l + s * Math.min(l, 1 - l);
-    if (v === 0) {
-      s = 0;
-    } else {
-      s = 2 * (1 - l / v);
-    }
-
-    const pickerRadius = dimensionsRef.current.pickerDiameter / 2;
-    const x = s * Math.cos(h) * pickerRadius;
-    const y = s * Math.sin(h) * pickerRadius * (v < 0.5 ? 1 : -1);
-
-    return { x, y };
-  }
 
   const outOfBounds = (radius) => {
     return radius >= 1.0;
   };
 
   const updateColor = (event, gestureState) => {
+    // normalize x, y to [-1, 1]
     const x = 2 * event.nativeEvent.locationX / dimensionsRef.current.pickerDiameter - 1;
     const y = 2 * event.nativeEvent.locationY / dimensionsRef.current.pickerDiameter - 1;
     const {radius, theta} = cartesianToPolar(x, y);
@@ -148,7 +117,12 @@ export default function ColorPicker() {
       const {h, s, l} = color;
       setBrightness(l);
       setSelectedColor({h, s, l});
-      const {x, y} = hslToCartesian(h, s, l);
+      const {x, y} = hslToCartesian(
+        h,
+        s,
+        l,
+        dimensionsRef.current.pickerRadius
+      );
       pan.setOffset({
         x: x,
         y: y,
@@ -163,7 +137,12 @@ export default function ColorPicker() {
   const onSliderValueChange = ((value) => {
     setBrightness(value);
     setSelectedColor({h: selectedColor.h, s: selectedColor.s, l: value});
-    const {x, y} = hslToCartesian(selectedColor.h, selectedColor.s, value);
+    const {x, y} = hslToCartesian(
+      selectedColor.h,
+      selectedColor.s,
+      value,
+      dimensionsRef.current.pickerRadius
+    );
     if (value <= 50) {
       return
     }
