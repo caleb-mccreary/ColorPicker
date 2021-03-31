@@ -20,7 +20,6 @@ export function degreesToRadians(degrees) {
 export function hslToCartesian(h, s, l, radius) {
   h = degreesToRadians(h);
   ({h, s, v} = hslToHSV(h, s, l));
-  console.log(h, s, v);
   // convert to x, y and scale to radius
   const x = s * Math.cos(h) * radius;
   const y = s * Math.sin(h) * radius * (v < 0.5 ? 1 : -1);
